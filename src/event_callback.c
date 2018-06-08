@@ -1,5 +1,25 @@
-/* LuaEvent - Copyright (C) 2007,2012 Thomas Harning <harningt@gmail.com>
- * Licensed as LGPL - See doc/COPYING for details */
+/* LuaEvent
+   Copyright (C) 2007,2012,2013 Thomas Harning <harningt@gmail.com>
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+   THE SOFTWARE.
+   */
+
 #include "event_callback.h"
 #include <assert.h>
 #include <lauxlib.h>
@@ -23,6 +43,7 @@ void luaevent_callback(int fd, short event, void* p) {
 	lua_State* L;
 	int ret;
 	struct timeval new_tv = { 0, 0 };
+	le_base* base;
 	assert(cb);
 	if(!cb->base)
 		return; /* Event has already been collected + destroyed */
@@ -30,11 +51,13 @@ void luaevent_callback(int fd, short event, void* p) {
 	L = cb->base->loop_L;
 	lua_rawgeti(L, LUA_REGISTRYINDEX, cb->callbackRef);
 	lua_pushinteger(L, event);
+	/* cb->base may be NULL after the pcall, if the event is destroyed */
+	base = cb->base;
 	if(lua_pcall(L, 1, 2, 0))
 	{
-		cb->base->errorMessage = luaL_ref(L, LUA_REGISTRYINDEX);
-		event_base_loopbreak(cb->base->base);
-		lua_pop(L, 2);
+		base->errorMessage = luaL_ref(L, LUA_REGISTRYINDEX);
+		event_base_loopbreak(base->base);
+		lua_pop(L, 1);
 		return;
 	}
 	if(!cb->base) {
@@ -60,8 +83,6 @@ void luaevent_callback(int fd, short event, void* p) {
 		if( newEvent != event || (cb->timeout.tv_sec != new_tv.tv_sec || cb->timeout.tv_usec != new_tv.tv_usec) ) {
 			struct timeval *ptv = &cb->timeout;
 			cb->timeout = new_tv;
-			if(!cb->timeout.tv_sec && !cb->timeout.tv_usec)
-				ptv = NULL;
 			event_del(ev);
 			event_set(ev, fd, EV_PERSIST | newEvent, luaevent_callback, cb);
 			/* Assume cannot set a new timeout.. */

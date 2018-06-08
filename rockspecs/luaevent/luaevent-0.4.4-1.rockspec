@@ -1,17 +1,9 @@
--- This file was automatically generated for the LuaDist project.
-
 package="luaevent"
-version="0.4.3-1"
--- LuaDist source
+version="0.4.4-1"
 source = {
-  tag = "0.4.3-1",
-  url = "git://github.com/LuaDist-testing/luaevent.git"
+   url = "https://github.com/harningt/luaevent/archive/v0.4.4.tar.gz",
+   dir = "luaevent-0.4.4",
 }
--- Original source
--- source = {
---    url = "https://github.com/harningt/luaevent/archive/v0.4.3.tar.gz",
---    dir = "luaevent-0.4.3",
--- }
 description = {
    summary = "libevent binding for Lua",
    detailed = [[
@@ -21,7 +13,7 @@ description = {
    license = "MIT"
 }
 dependencies = {
-   "lua >= 5.1, < 5.3"
+   "lua >= 5.1, <= 5.3"
 }
 external_dependencies = {
    EVENT = {
